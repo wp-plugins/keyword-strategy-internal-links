@@ -300,7 +300,7 @@ function kws_replace_content($content)
 function kws_admin()
 {
 	$update_frequencies = array('hourly', 'twicedaily', 'daily');
-	$keywords_limits = array(500,1000,2000,5000,10000,2000);
+	$keywords_limits = array(500,1000,2000,5000,10000,20000);
 	global $kws_options;
 	kws_options();
 	kws_fix_database();
