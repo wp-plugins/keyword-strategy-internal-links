@@ -3,7 +3,7 @@ Contributors: keyword-strategy
 Tags: seo, search engine optimization, links, internal linking
 Requires at least: 3.0.0
 Tested up to: 3.0.5
-Stable tag: 1.3
+Stable tag: 1.4
 
 The Keyword Strategy Internal Links plugin will automatically link keywords to destination pages within your website.
 
@@ -38,6 +38,9 @@ The Keyword Strategy tool lets users manage their keywords and the URLs they're 
 Just replace old plugin files.
 
 == Changelog ==
+
+= 1.4 =
+* Bug fixes and improvements
 
 = 1.3 =
 * Plugin added to WordPress repository.
