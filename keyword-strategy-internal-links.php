@@ -3,7 +3,7 @@
 Plugin Name: Keyword Strategy
 Plugin URI: http://www.keywordstrategy.org/wordpress-plugin/
 Description: Keyword Strategy link generator plugin
-Version: 1.2
+Version: 1.4
 Author: Keyword Strategy
 Author URI: http://www.keywordstrategy.org/
 License: GPL2
@@ -112,14 +112,15 @@ function kws_get_keywords($cookies, $project_id)
 	global $kws_options;
 	$request = new WP_Http;
 	$body = array('start'=>0, 'limit'=>(isset($kws_options['keywords_limit'])?$kws_options['keywords_limit']:10000),'project_id'=>$project_id,'url'=>'http','sort'=>'rank', 'dir'=>'DESC', 'remote'=>1, 'exact_match' => '>= '.$kws_options['exact_match']);
-	$result = $request->request('http://www.keywordstrategy.org/keywords/grid_data', array('method'=>'POST', 'cookies'=>$cookies, 'body'=>$body));
-	$keywords = unserialize($result['body']);
+	$result = $request->request('http://www.keywordstrategy.org/keywords/grid_data', array('method'=>'POST', 'cookies'=>$cookies, 'body'=>$body, 'timeout'=>60));
+	$keywords = @unserialize($result['body']);
 	return $keywords;
 }
 
 function kws_update_database($keywords)
 {
 	global $wpdb, $kws_options;
+	if (! $keywords) return;
 	$wpdb->query("TRUNCATE TABLE `{$kws_options['keywords_table']}`");
 	$sql = "INSERT INTO `{$kws_options['keywords_table']}` (keyword,url,exact_match) VALUES ";
 	foreach ($keywords AS $item)
@@ -183,7 +184,7 @@ function kws_deactivation()
 add_filter('the_content', 'kws_replace_content', 100);
 function kws_replace_content($content)
 {
-	global $kws_keywords, $wpdb, $post, $kws_found_keywords, $kws_options;
+	global $kws_keywords, $wpdb, $post, $kws_found_keywords, $kws_urls, $kws_options;
 
 
 	if ($kws_keywords === NULL)
@@ -212,6 +213,11 @@ function kws_replace_content($content)
 	{
 		$kws_found_keywords = array();
 	}
+	
+	if (! $kws_urls)
+	{
+		$kws_urls = array();
+	}
 
 	foreach ($kws_found_keywords AS $found_keyword => $found_data)
 	{
@@ -223,7 +229,7 @@ function kws_replace_content($content)
 	}
 
 		
-	preg_match_all('/(?:\[caption.*?\[\/caption\]|<a .*?<\/\s*a>)/s', $content, $matches);
+	preg_match_all('/(?:\[caption.*?\[\/caption\]|<a .*?<\/\s*a>|<h1.*?<\/\s*h1>|<h2.*?<\/\s*h2>|<h3.*?<\/\s*h3>|<h4.*?<\/\s*h4>|<kwsignore.*?<\/\s*kwsignore>)/s', $content, $matches);
 	$captions = array();
 	if ($matches && $matches[0])
 	{
@@ -238,7 +244,7 @@ function kws_replace_content($content)
 	/** Loop through each keyphrase, looking for each one in the post */
 	foreach ($kws_keywords as $keyphrase)
 	{
-		if ($keyphrase['url'] == $post_url || $keyphrase['url'] == $site_url || $links_left <= 0 || !$keyphrase['keyword']) continue;
+		if ($keyphrase['url'] == $post_url || $keyphrase['url'] == $site_url || $links_left <= 0 || !$keyphrase['keyword'] || in_array($keyphrase['url'], $kws_urls)) continue;
 
 		if (stristr($content, $keyphrase['url'])) continue;
 
@@ -274,7 +280,7 @@ function kws_replace_content($content)
 		} else {
 				$patterns[] = '~(?!((<.*?)|(<a.*?)))(\b'. $keyphrase['keyword'] . '\b)(?!(([^<>]*?)>)|([^>]*?</a>))~si';
 		}
-			
+		$kws_urls[] = $keyphrase['url'];
 		$replacements[] = "<a href=\"".htmlspecialchars($keyphrase['url']).'">$0</a>';
 		$links_left--;
 	}
@@ -295,7 +301,7 @@ function kws_replace_content($content)
 function kws_admin()
 {
 	$update_frequencies = array('hourly', 'twicedaily', 'daily');
-	$keywords_limits = array(500,1000,2000,5000,10000,2000);
+	$keywords_limits = array(500,1000,2000,5000,10000,20000);
 	global $kws_options;
 	kws_options();
 	kws_fix_database();
