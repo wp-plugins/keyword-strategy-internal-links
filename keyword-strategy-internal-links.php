@@ -3,7 +3,7 @@
 Plugin Name: Keyword Strategy
 Plugin URI: http://www.keywordstrategy.org/wordpress-plugin/
 Description: Keyword Strategy link generator plugin
-Version: 1.3
+Version: 1.4
 Author: Keyword Strategy
 Author URI: http://www.keywordstrategy.org/
 License: GPL2
@@ -112,14 +112,15 @@ function kws_get_keywords($cookies, $project_id)
 	global $kws_options;
 	$request = new WP_Http;
 	$body = array('start'=>0, 'limit'=>(isset($kws_options['keywords_limit'])?$kws_options['keywords_limit']:10000),'project_id'=>$project_id,'url'=>'http','sort'=>'rank', 'dir'=>'DESC', 'remote'=>1, 'exact_match' => '>= '.$kws_options['exact_match']);
-	$result = $request->request('http://www.keywordstrategy.org/keywords/grid_data', array('method'=>'POST', 'cookies'=>$cookies, 'body'=>$body));
-	$keywords = unserialize($result['body']);
+	$result = $request->request('http://www.keywordstrategy.org/keywords/grid_data', array('method'=>'POST', 'cookies'=>$cookies, 'body'=>$body, 'timeout'=>60));
+	$keywords = @unserialize($result['body']);
 	return $keywords;
 }
 
 function kws_update_database($keywords)
 {
 	global $wpdb, $kws_options;
+	if (! $keywords) return;
 	$wpdb->query("TRUNCATE TABLE `{$kws_options['keywords_table']}`");
 	$sql = "INSERT INTO `{$kws_options['keywords_table']}` (keyword,url,exact_match) VALUES ";
 	foreach ($keywords AS $item)
@@ -228,7 +229,7 @@ function kws_replace_content($content)
 	}
 
 		
-	preg_match_all('/(?:\[caption.*?\[\/caption\]|<a .*?<\/\s*a>|<h1.*?<\/\s*h1>|<h2.*?<\/\s*h2>|<h3.*?<\/\s*h3>|<h4.*?<\/\s*h4>)/s', $content, $matches);
+	preg_match_all('/(?:\[caption.*?\[\/caption\]|<a .*?<\/\s*a>|<h1.*?<\/\s*h1>|<h2.*?<\/\s*h2>|<h3.*?<\/\s*h3>|<h4.*?<\/\s*h4>|<kwsignore.*?<\/\s*kwsignore>)/s', $content, $matches);
 	$captions = array();
 	if ($matches && $matches[0])
 	{
