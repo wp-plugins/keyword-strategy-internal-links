@@ -3,7 +3,7 @@
 Plugin Name: Keyword Strategy
 Plugin URI: http://www.keywordstrategy.org/wordpress-plugin/
 Description: Keyword Strategy link generator plugin
-Version: 1.5
+Version: 1.6
 Author: Keyword Strategy
 Author URI: http://www.keywordstrategy.org/
 License: GPL2

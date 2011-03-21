@@ -3,7 +3,7 @@ Contributors: keyword-strategy
 Tags: seo, search engine optimization, links, internal linking
 Requires at least: 3.0.0
 Tested up to: 3.1
-Stable tag: 1.5
+Stable tag: 1.6
 
 The Keyword Strategy Internal Links plugin will automatically link keywords to destination pages within your website.
 
