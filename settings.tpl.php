@@ -1,5 +1,14 @@
 <div class="wrap">
-<h2>Keyword Strategy</h2>
+<h2 style="float:left;">Keyword Strategy</h2>
+
+<h2 class="nav-tab-wrapper">
+<a class="nav-tab nav-tab-active" href="<?= get_admin_url(null, 'options-general.php?page=keyword-strategy-internal-links') ?>">Overview</a>
+	<a class="nav-tab" href="<?= get_admin_url(null, 'options-general.php?page=keyword-strategy-internal-links&kws_action=inpage') ?>">Insert Keywords</a>
+</h2>
+
+<? if (! function_exists('get_admin_url')): ?>
+<p style="color:red;">Your WordPress version is not supported. Please update.</p>
+<? endif; ?>
 
 <? if ($kws_options['username'] && !isset($_GET['kws_login_error'])): ?>
 <p>Current login: <b><?= htmlspecialchars($kws_options['username']) ?></b> <input type="button" class="button" value="Change login" style="margin-top: 15px;" onclick="document.getElementById('kws-login-box').style.display='block';this.parentNode.style.display='none';" /></p>
