@@ -39,7 +39,7 @@ Just replace old plugin files.
 
 == Changelog ==
 
-= 1.5 =
+= 1.6 =
 * New "Insert Keywords" section
 
 = 1.4 =
