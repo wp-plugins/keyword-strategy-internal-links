@@ -442,7 +442,7 @@ function kws_admin()
 		{
 			$redirect_url .= '&kws_login_error='.urlencode("wrong username or password").'&kws_username='.urlencode($username);
 		}
-		kws_js_redirect(get_admin_url(null, $redirect_url));
+		kws_js_redirect($redirect_url);
 	}
 
 	if ($action == 'save_options')
