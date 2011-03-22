@@ -76,10 +76,10 @@
 			<td>
 				<select name="kws_keywords_limit">
 					<? foreach ($keywords_limits AS $limit): ?>
-						<option value="<?= $limit ?>" <? if($limit == $kws_options['keywords_limit'] || (!isset($kws_options['keywords_limit']) && $limit == 10000)): ?>selected="selected"<? endif; ?> ><?= $limit ?></option>
+						<option value="<?= $limit ?>" <? if($limit == $kws_options['keywords_limit'] || (!isset($kws_options['keywords_limit']) && $limit == 1000)): ?>selected="selected"<? endif; ?> ><?= $limit ?></option>
 					<? endforeach; ?>
 				</select>
-				default: 10000
+				<b>If you are expereincing any performance issues, try to lower this.</b> default: 1000
 			</td> 
 		</tr>
 	</table>

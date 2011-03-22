@@ -117,7 +117,7 @@ function kws_get_keywords($cookies, $project_id)
 {
 	global $kws_options;
 	$request = new WP_Http;
-	$body = array('start'=>0, 'limit'=>(isset($kws_options['keywords_limit'])?$kws_options['keywords_limit']:10000),'project_id'=>$project_id,'url'=>'!null','sort'=>'rank', 'dir'=>'DESC', 'remote'=>1, 'exact_match' => '>= '.$kws_options['exact_match']);
+	$body = array('start'=>0, 'limit'=>(isset($kws_options['keywords_limit'])?$kws_options['keywords_limit']:1000),'project_id'=>$project_id,'url'=>'!null','sort'=>'rank', 'dir'=>'DESC', 'remote'=>1, 'exact_match' => '>= '.$kws_options['exact_match']);
 	$result = $request->request('http://www.keywordstrategy.org/keywords/grid_data', array('method'=>'POST', 'cookies'=>$cookies, 'body'=>$body, 'timeout'=>60));
 	$keywords = @unserialize($result['body']);
 	return $keywords;
@@ -389,7 +389,7 @@ function kws_replace_content($content)
 function kws_admin()
 {
 	$update_frequencies = array('hourly', 'twicedaily', 'daily');
-	$keywords_limits = array(500,1000,2000,5000,10000,20000);
+	$keywords_limits = array(100,200,500,1000,2000,5000,10000,20000);
 	global $kws_options, $wpdb;
 	kws_options();
 	kws_fix_database();
