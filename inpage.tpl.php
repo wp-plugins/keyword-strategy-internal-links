@@ -2,26 +2,34 @@
 <h2 style="float:left;">Keyword Strategy</h2>
 
 <h2 class="nav-tab-wrapper">
-<a class="nav-tab " href="<?= get_admin_url(null, 'options-general.php?page=keyword-strategy-internal-links') ?>">Overview</a>
-	<a class="nav-tab nav-tab-active" href="<?= get_admin_url(null, 'options-general.php?page=keyword-strategy-internal-links&kws_action=inpage') ?>">Insert Keywords</a>
+<a class="nav-tab " href="<?= KWS_PLUGIN_URL ?>">Overview</a>
+	<a class="nav-tab nav-tab-active" href="<?= KWS_PLUGIN_URL . '&kws_action=inpage' ?>">Insert Keywords</a>
+	<a class="nav-tab" href="<?= KWS_PLUGIN_URL . '&kws_action=related' ?>">Links Needed</a>
 </h2>
 
 <p>
 	These are keyword variations that you could enter into your pages. Click "Edit Page" to open the article and find a good place to put the text in. <br /> "Blacklist" will blacklist the keyword in your Keyword Strategy project. Click "Detach from URL" if you don't want to associate this keyword with this page.
 </p>
-<p>Last update: <?= $kws_options['last_update']? date('Y-m-d H:i', $kws_options['last_update']).", {$inpage_total_keywords} keywords" : 'Never'?> <span><input class="button" type="submit" value="Update now" onclick="window.location = window.location.href + '&kws_action=update_now_inpage'; this.parentNode.innerHTML = 'Updating... Please wait...'" /></span></p>
+<p>Last update: <?= $kws_options['last_update']? date('Y-m-d H:i', $kws_options['last_update']).", {$inpage_total_keywords} keywords" : 'Never'?> <span><input class="button" type="submit" value="Update now" onclick="window.location = '<?= KWS_PLUGIN_URL ?>' + '&kws_action=update_now_inpage'; this.parentNode.innerHTML = 'Updating... Please wait...'" /></span></p>
 <p> Your keywords will update automatically every day.
 
 
 <? if ($inpage): ?>
 <form action="<?= KWS_PLUGIN_URL ?>" method="post">
-<input type="hidden" name="kws_action" value="inpage_form" />
-<select name="inpage_action" style="margin: 10px 0; width:130px;">
-	<option value="none">Bulk Actions</option>
-	<option value="blacklist">Blacklist</option>
-	<option value="detach">Detach</option>
-</select>
-<input type="submit" value="Apply" class="button-secondary action" />
+<div class="tablenav">
+<div class="alignleft actions">
+	<input type="hidden" name="kws_action" value="inpage_form" />
+	<select name="inpage_action" style="margin: 10px 0; width:130px;">
+		<option value="none">Bulk Actions</option>
+		<option value="blacklist">Blacklist</option>
+		<option value="detach">Detach</option>
+	</select>
+	<input type="submit" value="Apply" class="button-secondary action" />
+</div>
+<div class="alignright actions">
+	<?= kws_pagination('top', $page_args) ?>
+</div>
+</div>
 <table class="wp-list-table widefat fixed pages" cellspacing="0">
 	<thead>
 		<tr>
@@ -57,12 +65,19 @@
 	<? endforeach; ?>
 		</tbody>
 </table>
-<select name="inpage_action2" style="margin-top: 10px; width:130px;">
-	<option value="none">Bulk Actions</option>
-	<option value="blacklist">Blacklist</option>
-	<option value="detach">Detach</option>
-</select>
-<input type="submit" value="Apply" name="apply2" class="button-secondary action" />
+<div class="tablenav">
+	<div class="alignleft actions">
+		<select name="inpage_action2" style="margin-top: 10px; width:130px;">
+			<option value="none">Bulk Actions</option>
+			<option value="blacklist">Blacklist</option>
+			<option value="detach">Detach</option>
+		</select>
+		<input type="submit" value="Apply" name="apply2" class="button-secondary action" />
+	</div>
+	<div class="alignright actions">
+		<?= kws_pagination('bottom', $page_args) ?>
+	</div>
+</div>
 
 </form>
 </div>

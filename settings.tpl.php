@@ -2,8 +2,9 @@
 <h2 style="float:left;">Keyword Strategy</h2>
 
 <h2 class="nav-tab-wrapper">
-<a class="nav-tab nav-tab-active" href="<?= get_admin_url(null, 'options-general.php?page=keyword-strategy-internal-links') ?>">Overview</a>
-	<a class="nav-tab" href="<?= get_admin_url(null, 'options-general.php?page=keyword-strategy-internal-links&kws_action=inpage') ?>">Insert Keywords</a>
+<a class="nav-tab nav-tab-active" href="<?= KWS_PLUGIN_URL ?>">Overview</a>
+	<a class="nav-tab" href="<?= KWS_PLUGIN_URL . '&kws_action=inpage' ?>">Insert Keywords</a>
+	<a class="nav-tab" href="<?= KWS_PLUGIN_URL . '&kws_action=related' ?>">Links Needed</a>
 </h2>
 
 <? if (! function_exists('get_admin_url')): ?>
