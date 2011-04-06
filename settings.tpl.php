@@ -1,5 +1,15 @@
 <div class="wrap">
-<h2>Keyword Strategy</h2>
+<h2 style="float:left;">Keyword Strategy</h2>
+
+<h2 class="nav-tab-wrapper">
+<a class="nav-tab nav-tab-active" href="<?= KWS_PLUGIN_URL ?>">Overview</a>
+	<a class="nav-tab" href="<?= KWS_PLUGIN_URL . '&kws_action=inpage' ?>">Insert Keywords</a>
+	<a class="nav-tab" href="<?= KWS_PLUGIN_URL . '&kws_action=related' ?>">Links Needed</a>
+</h2>
+
+<? if (! function_exists('get_admin_url')): ?>
+<p style="color:red;">Your WordPress version is not supported. Please update.</p>
+<? endif; ?>
 
 <? if ($kws_options['username'] && !isset($_GET['kws_login_error'])): ?>
 <p>Current login: <b><?= htmlspecialchars($kws_options['username']) ?></b> <input type="button" class="button" value="Change login" style="margin-top: 15px;" onclick="document.getElementById('kws-login-box').style.display='block';this.parentNode.style.display='none';" /></p>
@@ -67,10 +77,10 @@
 			<td>
 				<select name="kws_keywords_limit">
 					<? foreach ($keywords_limits AS $limit): ?>
-						<option value="<?= $limit ?>" <? if($limit == $kws_options['keywords_limit'] || (!isset($kws_options['keywords_limit']) && $limit == 10000)): ?>selected="selected"<? endif; ?> ><?= $limit ?></option>
+						<option value="<?= $limit ?>" <? if($limit == $kws_options['keywords_limit'] || (!isset($kws_options['keywords_limit']) && $limit == 1000)): ?>selected="selected"<? endif; ?> ><?= $limit ?></option>
 					<? endforeach; ?>
 				</select>
-				default: 10000
+				<b>If you are expereincing any performance issues, try to lower this.</b> default: 1000
 			</td> 
 		</tr>
 	</table>
