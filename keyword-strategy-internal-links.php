@@ -1,6 +1,6 @@
 <?php
 /*
-Plugin Name: Keyword Strategy
+Plugin Name: Keyword Strategy Internal Links
 Plugin URI: http://www.keywordstrategy.org/wordpress-plugin/
 Description: Keyword Strategy link generator plugin
 Version: 1.7
