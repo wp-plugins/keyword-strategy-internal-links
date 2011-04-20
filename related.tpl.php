@@ -25,6 +25,17 @@
 		<span><input type="submit" value="Update" class="button" onclick="this.style.display='none'; this.parentNode.appendChild(document.createTextNode('Updating... Please wait...'));" /></span>
 	</form>
 
+
+	<form action="<?= KWS_PLUGIN_URL ?>" method="get" style="text-align:right;">
+		<input type="hidden" name="page" value="keyword-strategy-internal-links" />
+		<input type="hidden" name="kws_action" value="related" />
+		<? if ($_REQUEST['search']): ?>
+			<input type="button" onclick="this.parentNode.search.value = ''; this.parentNode.submit();" class="button" value="Reset '<?= htmlspecialchars(stripslashes($_REQUEST['search'])) ?>' search" />
+		<? endif; ?>
+		<input type="text" name="search" value="<?= htmlspecialchars(stripslashes($_REQUEST['search'])) ?>" />
+		<input class="button" type="submit" value="Find" />
+	</form>
+
 <? if ($related): ?>
 <form action="<?= KWS_PLUGIN_URL ?>" method="post">
 <div class="tablenav">
@@ -41,12 +52,12 @@
 	<?= kws_pagination('top', $page_args) ?>
 </div>
 </div>
-<table class="wp-list-table widefat fixed pages" cellspacing="0">
+<table class="wp-list-table widefat fixed pages kws-table" cellspacing="0">
 	<thead>
 		<tr>
 			<th scope="col" class="manage-column column-cb check-column" style=""><input type="checkbox"></th>
-			<th scope="col" class="manage-column" style=""><span>Keyword</span></th><th scope="col" class="manage-column" style=""><span>URL</span></th>
-			<th scope="col" class="manage-column"><span>Links Needed</span></th>	
+			<th scope="col" class="manage-column sorted" kws-column="keyword" style=""><span>Keyword</span></th><th scope="col" class="manage-column sorted" kws-column="url" style=""><span>URL</span></th>
+			<th scope="col" class="manage-column sorted" kws-column="links"><span>Links Needed</span></th>	
 		</tr>
 	</thead>
 	
@@ -101,9 +112,54 @@
 <? else: ?>
 
 <p>
+	<? if ($_REQUEST['search']): ?>
+	--- No keywords found ---
+	<? else: ?>
 	--- No keywords available ---
+	<? endif; ?>
 </p>
 
 <? endif; ?>
 </div>
 
+<script>
+(function($){
+	var sort_column = '<?= $_REQUEST['sort'] ?>';
+	var sort_dir = '<?= $_REQUEST['dir'] ?>';
+	$(document).ready(function(){
+		$('.kws-table th.sorted[kws-column]').each(function(){
+			var th = $(this);
+			var sorted = false;
+			var column = th.attr('kws-column');
+			console.log(column);
+			var text = th.text();
+			if (sort_column == column) {
+				sorted = true;
+				th.addClass(sort_dir);
+			}
+			th.html('<a href="#"><span>'+text+'</span><span class="sorting-indicator"></span></a>');
+			var a = th.find('a');
+			a.attr('href', location.href.replace(/&sort=[^&]+/g, '').replace(/&dir=[^&]+/g, '') + '&sort='+column+'&dir='+(sorted && sort_dir=='asc'? 'desc': 'asc'))
+			a.mouseover(function(){
+				if (sorted) {
+					th.addClass(sort_dir == 'asc'? 'asc' : 'desc');
+					th.removeClass(sort_dir == 'asc'? 'desc' : 'asc');
+				}
+				else {
+					th.addClass('desc');
+				}
+			});
+			a.mouseout(function(){
+				if (sorted) {
+					th.removeClass(sort_dir == 'asc'? 'asc' : 'desc');
+					th.addClass(sort_dir);
+				}
+				else {
+					th.removeClass('desc');
+					th.removeClass('asc');
+				}
+			});
+		});
+	});
+})(jQuery);
+</script>

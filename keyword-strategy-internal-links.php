@@ -3,7 +3,7 @@
 Plugin Name: Keyword Strategy Internal Links
 Plugin URI: http://www.keywordstrategy.org/wordpress-plugin/
 Description: Keyword Strategy link generator plugin
-Version: 1.7
+Version: 1.8
 Author: Keyword Strategy
 Author URI: http://www.keywordstrategy.org/
 License: GPL2
@@ -97,8 +97,7 @@ function _kws_update_keywords()
 	{
 		return 'No keywords found';
 	}
-	kws_update_database($keywords);
-	$kws_options['total_keywords'] = count($keywords);
+	$kws_options['total_keywords'] = kws_update_database($keywords);
 
 	$keywords = kws_get_inpage($cookies, $project);
 	kws_update_database_inpage($keywords);
@@ -114,7 +113,7 @@ function _kws_update_keywords()
 function kws_request($cfg=array())
 {
 	global $kws_options, $kws_cookies;
-	$cfg_default = array('cookies' => false, 'url' => 'keywords/grid_data', 'start' => 0, 'project' => $kws_options['project'], 'remote' => 1, 'params' => array(), 'method'=>'POST', 'timeout' => 60, 'limit' => 10000);
+	$cfg_default = array('cookies' => false, 'url' => 'keywords/grid_data', 'start' => 0, 'project' => $kws_options['project'], 'remote' => 1, 'params' => array(), 'method'=>'POST', 'timeout' => 60, 'limit' => 10000, 'unserialize' => true);
 	$cfg = array_merge($cfg_default, $cfg);
 	extract($cfg);
 	if (! $cookies)
@@ -122,7 +121,7 @@ function kws_request($cfg=array())
 		if (! $kws_cookies)
 		{
 			$result = kws_check_login($kws_options['username'], $kws_options['password']);
-			if ($result['body'] != 'ok')
+			if (! is_array($result) || $result['body'] != 'ok')
 			{
 				return false;
 			}
@@ -141,7 +140,9 @@ function kws_request($cfg=array())
 	}
 	$request = new WP_Http;
 	$result = $request->request('http://www.keywordstrategy.org/'.$url, array('method'=>$method, 'cookies'=>$cookies, 'body'=>$body, 'timeout'=>60));
-	return @unserialize($result['body']);
+	if (! is_array($result)) return false;
+
+	return $unserialize? @unserialize($result['body']) : $result['body'];
 }
 
 
@@ -162,6 +163,7 @@ function kws_google_extract_urls($search_query, $ignore_url)
 	$parsed = parse_url($ignore_url);
 	$request = new WP_Http;
 	$result = $request->request($search_url, array('timeout' => 30));
+	if (! is_array($result)) return array();
 	$html = $result['body'];
 	preg_match_all('#href="([^"]+?)"#', $html, $matches);
 	if (!$matches) return array();
@@ -190,21 +192,23 @@ function kws_options()
 
 function kws_get_project($cookies)
 {
-	$request = new WP_Http;
 	$site_url = site_url();
-	$result = $request->request('http://www.keywordstrategy.org/util/get_project', array('method' => 'POST', 'cookies' => $cookies, 'timeout' => 20, 'body'=>array('site'=>$site_url)));
-	return $result['body'];
+	return kws_request(array(
+		'url' => '/util/get_project',
+		'cookies' => $cookies,
+		'unserialize' => false,
+		'params' => array('site' => $site_url),
+	));
 }
 
 
 function kws_get_keywords($cookies, $project_id)
 {
 	global $kws_options;
-	$request = new WP_Http;
-	$body = array('start'=>0, 'limit'=>(isset($kws_options['keywords_limit'])?$kws_options['keywords_limit']:1000),'project_id'=>$project_id,'url'=>'!null','sort'=>'rank', 'dir'=>'DESC', 'remote'=>1, 'exact_match' => '>= '.$kws_options['exact_match']);
-	$result = $request->request('http://www.keywordstrategy.org/keywords/grid_data', array('method'=>'POST', 'cookies'=>$cookies, 'body'=>$body, 'timeout'=>60));
-	$keywords = @unserialize($result['body']);
-	return $keywords;
+	return kws_request(array(
+		'params' => array('start'=>0, 'limit'=>(isset($kws_options['keywords_limit'])?$kws_options['keywords_limit']:1000),'project_id'=>$project_id,'url'=>'!null','sort'=>'rank', 'dir'=>'DESC', 'remote'=>1, 'exact_match' => '>= '.$kws_options['exact_match']),
+		'cookies' => $cookies,
+	));
 }
 
 function kws_blacklist($keywords)
@@ -218,15 +222,11 @@ function kws_blacklist($keywords)
 function kws_update_inpage($title, $content)
 {
 	global $kws_options;
-	$result = kws_check_login($kws_options['username'], $kws_options['password']);
-	if ($result['body'] != 'ok')
-	{
-		return false;
-	}
-	$cookies = $result['cookies'];
-	$request = new WP_Http;
-	$body = array('project_id' => $kws_options['project'], 'title' => $title, 'content'=>$content, 'blacklist' => 1);
-	$result = $request->request('http://www.keywordstrategy.org/keywords/update_inpage', array('method' => 'POST', 'cookies' => $cookies, 'body'=>$body, 'timeout'=>60));
+	kws_request(array(
+		'url' => 'keywords/update_inpage',
+		'params' => array('project_id' => $kws_options['project'], 'title' => $title, 'content'=>$content, 'blacklist' => 1),
+		'unserialize' => false,
+	));
 	return true;
 }
 
@@ -242,23 +242,21 @@ function kws_detach($keywords)
 function kws_get_inpage($cookies, $project_id)
 {
 	global $kws_options;
-	$request = new WP_Http;
-	$body = array('start'=>0, 'limit'=>10000, 'project_id'=>$project_id, 'url'=>'!null', 'inpage'=>'none', 'sort'=>'rank', 'dir'=>'DESC', 'remote'=>1,);
-	$result = $request->request('http://www.keywordstrategy.org/keywords/grid_data', array('method'=>'POST', 'cookies'=>$cookies, 'body'=>$body, 'timeout'=>60));
-	$keywords = @unserialize($result['body']);
-	return $keywords;
+	return kws_request(array(
+		'params' => array('start'=>0, 'limit'=>10000, 'project_id'=>$project_id, 'url'=>'!null', 'inpage'=>'none', 'sort'=>'rank', 'dir'=>'ASC', 'remote'=>1,),
+		'cookies' => $cookies,
+	));
 }
 
 
 function kws_get_related($cookies, $project_id)
 {
 	global $kws_options;
-	$request = new WP_Http;
 	$minimum_links = $kws_options['related_links']? $kws_options['related_links'] : 1 ;
-	$body = array('start'=>0, 'limit'=>10000, 'project_id'=>$project_id, 'links'=>'<'.$minimum_links, 'sort'=>'rank', 'dir'=>'ASC', 'remote'=>1,);
-	$result = $request->request('http://www.keywordstrategy.org/keywords/grid_data', array('method'=>'POST', 'cookies'=>$cookies, 'body'=>$body, 'timeout'=>60));
-	$keywords = @unserialize($result['body']);
-	return $keywords;
+	return kws_request(array(
+		'params' => array('start'=>0, 'limit'=>10000, 'project_id'=>$project_id, 'links'=>'<'.$minimum_links, 'sort'=>'rank', 'dir'=>'ASC', 'remote'=>1,),
+		'cookie' => $cookies,
+	));
 }
 
 
@@ -268,14 +266,16 @@ function kws_update_database_inpage($keywords)
 	if (! $keywords) return;
 	$wpdb->query("TRUNCATE TABLE `{$kws_options['inpage_table']}`");
 	$sql = "INSERT INTO `{$kws_options['inpage_table']}` (keyword,url,post_id) VALUES ";
+	$count = 0;
 	foreach ($keywords AS $item)
 	{
-		$post_id = url_to_postid($item[1]);
-		if (! $post_id || ! $wpdb->query("SELECT id FROM {$wpdb->posts} WHERE id={$post_id}")) continue;
-		$sql .= "('".mysql_real_escape_string($item[0])."','".mysql_real_escape_string($item[1])."', {$post_id}),";
+		$post_id = kws_url_post_id($item[1]);
+		if (! $post_id) continue;
+		$sql .= "('".$wpdb->escape($item[0])."','".$wpdb->escape($item[1])."', {$post_id}),";
+		$count++;
 	}
 	$wpdb->query(substr($sql, 0, -1));
-	$wpdb->query("DELETE FROM `{$kws_options['inpage_table']}` WHERE id > ".count($keywords));
+	$wpdb->query("DELETE FROM `{$kws_options['inpage_table']}` WHERE id > ".$count);
 }
 
 
@@ -285,29 +285,36 @@ function kws_update_database_related($keywords)
 	if (! $keywords) return;
 	$wpdb->query("TRUNCATE TABLE `{$kws_options['related_table']}`");
 	$sql = "INSERT INTO `{$kws_options['related_table']}` (keyword,url,links,post_id) VALUES ";
+	$count = 0;
 	foreach ($keywords AS $item)
 	{
-		$post_id = url_to_postid($item[1]);
-		if (! $post_id || ! $wpdb->query("SELECT id FROM {$wpdb->posts} WHERE id={$post_id}")) continue;
-		$sql .= "('".mysql_real_escape_string($item[0])."','".mysql_real_escape_string($item[1])."', ".intval($item[3])." , {$post_id}),";
+		$post_id = kws_url_post_id($item[1]);
+		if (! $post_id) continue;
+		$sql .= "('".$wpdb->escape($item[0])."','".$wpdb->escape($item[1])."', ".intval($item[3])." , {$post_id}),";
+		$count++;
 	}
 	$wpdb->query(substr($sql, 0, -1));
-	$wpdb->query("DELETE FROM `{$kws_options['related_table']}` WHERE id > ".count($keywords));
+	$wpdb->query("DELETE FROM `{$kws_options['related_table']}` WHERE id > ".$count);
 }
 
 
 function kws_update_database($keywords)
 {
 	global $wpdb, $kws_options;
-	if (! $keywords) return;
+	if (! $keywords) return 0;
 	$wpdb->query("TRUNCATE TABLE `{$kws_options['keywords_table']}`");
 	$sql = "INSERT INTO `{$kws_options['keywords_table']}` (keyword,url,exact_match) VALUES ";
+	$count = 0;
 	foreach ($keywords AS $item)
 	{
-		$sql .= "('".mysql_real_escape_string($item[0])."','".mysql_real_escape_string($item[1])."','".mysql_real_escape_string($item[2])."'),";
+		$post_id = kws_url_post_id($item[1]);
+		if (! $post_id) continue;
+		$count++;
+		$sql .= "('".$wpdb->escape($item[0])."','".$wpdb->escape($item[1])."','".$wpdb->escape($item[2])."'),";
 	}
 	$wpdb->query(substr($sql, 0, -1));
 	$wpdb->query("DELETE FROM `{$kws_options['keywords_table']}` WHERE id > ".count($keywords));
+	return $count;
 }
 
 function kws_check_login($username, $password, $return_result=true)
@@ -430,8 +437,13 @@ function kws_replace_content($content)
 		}
 	}
 
-		
-	preg_match_all('/(?:\[caption.*?\[\/caption\]|<a .*?<\/\s*a>|<h1.*?<\/\s*h1>|<h2.*?<\/\s*h2>|<h3.*?<\/\s*h3>|<h4.*?<\/\s*h4>|<kwsignore.*?<\/\s*kwsignore>)/s', $content, $matches);
+	$ignore_regexp = '/(?:\[caption.*?\[\/caption\]|<a .*?<\/\s*a>';
+	if (! $kws_options['header_links'])
+	{
+		$ignore_regexp .= '|<h1.*?<\/\s*h1>|<h2.*?<\/\s*h2>|<h3.*?<\/\s*h3>|<h4.*?<\/\s*h4>|<h5.*?<\/\s*h5>|<h6.*?<\/\s*h6>';
+	}
+	$ignore_regexp .= '|<kwsignore.*?<\/\s*kwsignore>)/s';
+	preg_match_all($ignore_regexp, $content, $matches);
 	$captions = array();
 	if ($matches && $matches[0])
 	{
@@ -541,8 +553,8 @@ function kws_admin()
 
 	if ($action == 'login')
 	{
-		$username = $_POST['kws-username'];
-		$password = $_POST['kws-password'];
+		$username = stripslashes($_POST['kws-username']);
+		$password = stripslashes($_POST['kws-password']);
 		$redirect_url = KWS_PLUGIN_URL;
 		$result = kws_check_login($username, $password);
 		if ($result['body'] == 'ok')
@@ -571,6 +583,7 @@ function kws_admin()
 		$kws_options['links_article'] = intval($_POST['kws_links_article']);
 		$kws_options['links_priority'] = strval($_POST['kws_links_priority']);
 		$kws_options['tracker_enabled'] = intval($_POST['kws_tracker_enabled']);
+		$kws_options['header_links'] = intval($_POST['kws_header_links']);
 		$kws_options['linker_enabled'] = intval($_POST['kws_linker_enabled']);
 		$kws_options['keywords_limit'] = intval($_POST['kws_keywords_limit']);
 		update_option('kws_options', $kws_options);
@@ -582,8 +595,26 @@ function kws_admin()
 		$page = intval($_REQUEST['paged']);
 		if (!$page) $page = 1;
 		$links_limit = ($kws_options['related_links']? $kws_options['related_links'] : 1);
-		$related = $wpdb->get_results("SELECT * FROM `{$kws_options['related_table']}` WHERE links<{$links_limit} ORDER BY keyword LIMIT ".(($page-1) * 10).", 10", ARRAY_A);
-		$total_keywords = $wpdb->get_var("SELECT COUNT(*) FROM `{$kws_options['related_table']}` WHERE links<{$links_limit}");
+		$where = " WHERE links<{$links_limit} ";
+		if ($_REQUEST['search'])
+		{
+			$search = trim(stripslashes($_REQUEST['search']));
+			$search = str_replace('%', '', $search);
+			$search = str_replace('_', '', $search);
+			$search = $wpdb->escape('%'.$search.'%');
+			$where .= " AND keyword LIKE '{$search}' OR url LIKE '{$search}'";
+		}
+		$order_by = "";
+		if ($_REQUEST['sort'])
+		{
+			if ($_REQUEST['sort'] == 'links')
+			{
+				$_REQUEST['dir'] = $_REQUEST['dir'] == 'asc' ? 'desc' : 'asc';
+			}
+			$order_by = " ORDER BY {$_REQUEST['sort']} {$_REQUEST['dir']} ";
+		}
+		$related = $wpdb->get_results("SELECT * FROM `{$kws_options['related_table']}` {$where} {$order_by} LIMIT ".(($page-1) * 10).", 10", ARRAY_A);
+		$total_keywords = $wpdb->get_var("SELECT COUNT(*) FROM `{$kws_options['related_table']}` {$where}");
 
 		$page_args = array('total_items' => $total_keywords, 'per_page' => 10, 'current' => $page);
 		include WP_PLUGIN_DIR.'/keyword-strategy-internal-links/related.tpl.php';
@@ -593,8 +624,22 @@ function kws_admin()
 	{
 		$page = intval($_REQUEST['paged']);
 		if (!$page) $page = 1;
-		$inpage = $wpdb->get_results("SELECT * FROM `{$kws_options['inpage_table']}` ORDER BY keyword LIMIT ".(($page-1) * 10).", 10", ARRAY_A);
-		$inpage_total_keywords = $wpdb->get_var("SELECT COUNT(*) FROM `{$kws_options['inpage_table']}`");
+		$where = "";
+		if ($_REQUEST['search'])
+		{
+			$search = trim(stripslashes($_REQUEST['search']));
+			$search = str_replace('%', '', $search);
+			$search = str_replace('_', '', $search);
+			$search = $wpdb->escape('%'.$search.'%');
+			$where = " WHERE keyword LIKE '{$search}' OR url LIKE '{$search}'";
+		}
+		$order_by = "";
+		if ($_REQUEST['sort'])
+		{
+			$order_by = " ORDER BY {$_REQUEST['sort']} {$_REQUEST['dir']} ";
+		}
+		$inpage = $wpdb->get_results("SELECT * FROM `{$kws_options['inpage_table']}` {$where} {$order_by} LIMIT ".(($page-1) * 10).", 10", ARRAY_A);
+		$inpage_total_keywords = $wpdb->get_var("SELECT COUNT(*) FROM `{$kws_options['inpage_table']}`{$where}");
 
 		$page_args = array('total_items' => $inpage_total_keywords, 'per_page' => 10, 'current' => $page);
 		include WP_PLUGIN_DIR.'/keyword-strategy-internal-links/inpage.tpl.php';
@@ -730,8 +775,9 @@ function kws_url_post_id($url)
 	{
 		return $kws_url_post_ids[$url];
 	}
-	$post_id = url_to_postid($url);
-	if (! $post_id || ! $wpdb->query("SELECT id FROM {$wpdb->posts} WHERE id={$post_id}"))
+	$path = preg_replace('#^https?://[^/]+/#', '', $url);
+	$post_id = url_to_postid($path);
+	if (! $post_id || ! $wpdb->query("SELECT id FROM {$wpdb->posts} WHERE post_type!='attachment' AND id={$post_id}"))
 	{
 		$post_id = false;
 	}
@@ -747,7 +793,7 @@ function kws_delete_keywords($keywords)
 	$where = "keyword IN (";
 	foreach ($keywords AS $keyword)
 	{
-		$where .= '"'.mysql_real_escape_string($keyword).'",';
+		$where .= '"'.$wpdb->escape($keyword).'",';
 	}
 	$where = substr($where,0,-1).')';
 	$wpdb->query("DELETE FROM `{$kws_options['keywords_table']}` WHERE {$where}");

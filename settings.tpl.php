@@ -54,6 +54,10 @@
 			<td><input name="kws_tracker_enabled" type="checkbox" id="kws_tracker_enabled" value="1" <?= isset($kws_options['tracker_enabled']) && !$kws_options['tracker_enabled']? '': 'checked="checked"' ?> /> </td> 
 		</tr>
 		<tr valign="top"> 
+			<th scope="row"><label for="kws_header_links" style="white-space:nowrap;"> Allow links in H1-H6 tags</label></th> 
+			<td><input name="kws_header_links" type="checkbox" id="kws_header_links" value="1" <?= ! $kws_options['header_links']? '': 'checked="checked"' ?> /> </td> 
+		</tr>
+		<tr valign="top"> 
 			<th scope="row"><label for="kws_wait_days" style="white-space:nowrap;"> New articles shouldn't show links for how many days</label></th> 
 			<td><input name="kws_wait_days" type="text" id="kws_wait_days" value="<?= $kws_options['wait_days'] ?>" class="small-text" /> default: 0</td> 
 		</tr>
