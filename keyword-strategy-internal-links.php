@@ -775,8 +775,8 @@ function kws_url_post_id($url)
 	{
 		return $kws_url_post_ids[$url];
 	}
-	$path = preg_replace('#^https?://[^/]+/#', '', $url);
-	$post_id = url_to_postid($path);
+	$url = str_ireplace(site_url(), site_url(), $url);
+	$post_id = url_to_postid($url);
 	if (! $post_id || ! $wpdb->query("SELECT id FROM {$wpdb->posts} WHERE post_type!='attachment' AND id={$post_id}"))
 	{
 		$post_id = false;
