@@ -775,7 +775,7 @@ function kws_url_post_id($url)
 	{
 		return $kws_url_post_ids[$url];
 	}
-	$url = str_ireplace(site_url(), site_url(), $url);
+	$url = kws_ireplace(site_url(), site_url(), $url);
 	$post_id = url_to_postid($url);
 	if (! $post_id || ! $wpdb->query("SELECT id FROM {$wpdb->posts} WHERE post_type!='attachment' AND id={$post_id}"))
 	{
@@ -961,3 +961,14 @@ function kws_pagination( $which, $args ) {
 	$page_class = $total_pages < 2 ? ' one-page' : '';
 	return "<div class='tablenav-pages{$page_class}'>$output</div>";
 }
+
+function kws_ireplace($needle, $replacement, $haystack) {
+   $i = 0;
+   while (($pos = strpos(strtolower($haystack),strtolower($needle), $i)) !== false) {
+      $haystack = substr($haystack, 0, $pos) . $replacement.substr($haystack, $pos+strlen($needle));
+      $i=$pos+strlen($replacement);
+   }
+   return $haystack;
+}
+
+
