@@ -113,7 +113,6 @@
 			var th = $(this);
 			var sorted = false;
 			var column = th.attr('kws-column');
-			console.log(column);
 			var text = th.text();
 			if (sort_column == column) {
 				sorted = true;
