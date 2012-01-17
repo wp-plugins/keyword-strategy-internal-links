@@ -2,8 +2,8 @@
 Contributors: keyword-strategy
 Tags: seo, search engine optimization, links, internal linking
 Requires at least: 3.0.0
-Tested up to: 3.2.1
-Stable tag: 1.8.5
+Tested up to: 3.3.1
+Stable tag: 1.8.7
 
 The Keyword Strategy Internal Links plugin will automatically link keywords to destination pages within your website.
 
@@ -19,7 +19,7 @@ For example, you can make the first instance of the word "widgets" on any page t
 * easily insert keyword variations into your pages to attract additional visitors to your website
 * find additional pages within your site that would be good for additional internal links
 
-Please note that this plugin requires an active <a href = "http://www.keywordstrategy.org">Keyword Strategy</a> account. You can try a <a href = "http://www.keywordstrategy.org/subscribe/">free 30-day trial</a> of this powerful tool for Search Engine Optimization.
+Please note that this plugin requires an active <a href = "https://www.keywordstrategy.org">Keyword Strategy</a> account. You can try a <a href = "https://www.keywordstrategy.org/subscribe/">free 30-day trial</a> of this powerful tool for Search Engine Optimization.
 
 == Installation ==
 
@@ -38,7 +38,7 @@ Please note that this plugin requires an active <a href = "http://www.keywordstr
 
 Keyword Strategy is a web-based tool that assists you with your search engine optimization efforts. It helps you find keywords, track your rank in the search engines, organize your internal and external links, and much more. You can find out more information by going to:
 
-http://www.keywordstrategy.org
+https://www.keywordstrategy.org
 
 = Why do you need a Keyword Strategy account for this plugin? =
 
@@ -53,6 +53,10 @@ The Keyword Strategy tool is necessary to manage the internal links. If you shut
 Just replace old plugin files.
 
 == Changelog ==
+
+= 1.8.7 =
+* Keyword Strategy Insert Keywords box on post edit page
+* Bug fixes and improvements
 
 = 1.8.5 =
 * Option to disable plugin on some URLs

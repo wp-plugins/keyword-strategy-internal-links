@@ -44,7 +44,7 @@
 		<tr>
 			<th scope="col" class="manage-column column-cb check-column" style=""><input type="checkbox"></th>
 			<th scope="col" class="manage-column sorted" kws-column="keyword" style=""><a href="#"><span>Keyword</span></a></th>
-			<th scope="col" class="manage-column sorted" kws-column="url" style=""><span>URL</span></th>
+			<th scope="col" class="manage-column sorted" kws-column="url" style=""><span>Post URL</span></th>
 		</tr>
 	</thead>
 	
@@ -52,7 +52,7 @@
 	<tr>
 		<th scope="col" class="manage-column column-cb check-column"><input type="checkbox"></th>
 		<th scope="col" class="manage-column"><span>Keyword</span></th>
-		<th scope="col" class="manage-column"><span>URL</span></th>	</tr>
+		<th scope="col" class="manage-column"><span>Post URL</span></th>	</tr>
 	</tfoot>
 
 	<tbody>

@@ -10,7 +10,7 @@ Insert the keyword '<?= htmlspecialchars($keyword) ?>' into <?= $links_needed < 
 		<?= $url_links ?> links
 		<br />
 		<a target="_blank" href="post.php?post=<?= $post_id ?>&amp;action=edit" title="Edit this page">Edit&nbsp;Page</a>
-		<a class="thickbox" href="<?= admin_url('admin-ajax.php') ?>?action=kws_related_urls&amp;kws_keyword=<?= (urlencode($keyword)) ?>&amp;not_appropriate=<?= urlencode($url) ?>">Not&nbsp;Appropriate</a>
+		<a class="thickbox" href="<?= admin_url('admin-ajax.php') ?>?action=kws_related_urls&amp;kws_keyword=<?= (urlencode($keyword)) ?>&amp;not_appropriate=<?= urlencode($url) ?>" title="Hide this suggestion">Not&nbsp;Appropriate</a>
 	</p>
 	<? endforeach; ?>
 <? else: ?>
