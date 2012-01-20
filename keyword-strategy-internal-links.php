@@ -3,7 +3,7 @@
 Plugin Name: Keyword Strategy Internal Links
 Plugin URI: http://www.keywordstrategy.org/wordpress-plugin/
 Description: Keyword Strategy link generator plugin
-Version: 1.8.7
+Version: 1.8.8
 Author: Keyword Strategy
 Author URI: http://www.keywordstrategy.org/
 License: GPL2
@@ -498,7 +498,7 @@ function kws_replace_content($content)
 		}
 	}
 
-	$ignore_regexp = '/(?:\[caption.*?\[\/caption\]|<a .*?<\/\s*a>';
+	$ignore_regexp = '/(?:\[caption.*?\[\/caption\]|<a .*?<\/\s*a>|<script.*?<\/\s*script>';
 	if (! $kws_options['header_links'])
 	{
 		$ignore_regexp .= '|<h1.*?<\/\s*h1>|<h2.*?<\/\s*h2>|<h3.*?<\/\s*h3>|<h4.*?<\/\s*h4>|<h5.*?<\/\s*h5>|<h6.*?<\/\s*h6>';
@@ -686,7 +686,7 @@ function kws_admin()
 			}
 			$order_by = " ORDER BY {$_REQUEST['sort']} {$_REQUEST['dir']} ";
 		}
-		$related = $wpdb->get_results("SELECT * FROM ".kws_get_table('related').", {$where} {$order_by} LIMIT ".(($page-1) * 10).", 10", ARRAY_A);
+		$related = $wpdb->get_results("SELECT * FROM ".kws_get_table('related')." {$where} {$order_by} LIMIT ".(($page-1) * 10).", 10", ARRAY_A);
 		$total_keywords = $wpdb->get_var("SELECT COUNT(*) FROM ".kws_get_table('related')." {$where}");
 
 		$page_args = array('total_items' => $total_keywords, 'per_page' => 10, 'current' => $page);
@@ -908,7 +908,7 @@ function kws_tracker()
 
 function kws_plugin_action_links( $links, $file ) {
 	if ( $file == plugin_basename( dirname(__FILE__).'/keyword-strategy-internal-links.php' ) ) {
-		$links[] = '<a href="'.KWS_PLUGIN_URL.'">'.__('Settings').'</a>';
+		array_unshift($links, '<a href="'.KWS_PLUGIN_URL.'">'.__('Settings').'</a>');
 	}
 
 	return $links;
