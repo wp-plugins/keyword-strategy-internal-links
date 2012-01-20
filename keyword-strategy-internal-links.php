@@ -822,7 +822,7 @@ function kws_related_urls()
 			$urls[] = $google_url;
 		}
 	}
-	$result = kws_request(array('url' => 'keywords/related', 'params' => array('keyword' => $keyword, 'urls' => $urls)));
+	$result = kws_request(array('url' => 'keywords/related', 'params' => array('keyword' => $keyword, 'urls' => serialize($urls))));
 	$urls = array();
 	if ($result)
 	{
