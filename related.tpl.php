@@ -11,7 +11,7 @@
 	Use this page to create more internal links. Find other pages on your site that could link to your keywords and boost your ranking strength.
 </p>
 <p>Last update: <?= $kws_options['last_update']? date('Y-m-d H:i', $kws_options['last_update']).", {$total_keywords} keywords" : 'Never'?> <span><input class="button" type="submit" value="Update now" onclick="window.location = '<?= KWS_PLUGIN_URL ?>' + '&kws_action=update_now_related'; this.parentNode.innerHTML = 'Updating... Please wait...'" /></span></p>
-<p> Your keywords will update automatically every day.
+<p> Your keywords will update automatically every day.</p>
 
 	<form method="post" action="">
 		<input type="hidden" name="kws_action" value="related_links" />
@@ -108,7 +108,6 @@
 </div>
 
 </form>
-</div>
 <? else: ?>
 
 <p>

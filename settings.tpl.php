@@ -35,7 +35,17 @@
 	<? if ($kws_options['update_error']): ?>
 		<p style="color:red;">Keywords update error: <?= htmlspecialchars($kws_options['update_error']) ?></p>
 	<? endif; ?>
-<p>Last update: <?= $kws_options['last_update']? date('Y-m-d H:i', $kws_options['last_update']).", {$kws_options['total_keywords']} keywords" : 'Never'?> <span><input class="button" type="submit" value="Update now" onclick="window.location = window.location.href + '&kws_action=update_now'; this.parentNode.innerHTML = 'Updating... Please wait...'" /></span></p>
+<p>Last update: 
+	<? if ($kws_options['last_update']): ?>
+		<?= date('Y-m-d H:i', $kws_options['last_update']) ?>, <?= $kws_options['total_keywords'] ?>
+		keywords 
+		<? if ($kws_options['total_keywords']): ?>
+			(<a target="_blank" href="<?= htmlspecialchars(admin_url('admin-ajax.php').'?action=kws_all_keywords') ?>">view</a>)
+		<? endif; ?>
+	<? else: ?>
+		Never
+	<? endif; ?>
+	<span><input class="button" type="submit" value="Update now" onclick="window.location = window.location.href + '&kws_action=update_now'; this.parentNode.innerHTML = 'Updating... Please wait...'" /></span></p>
 <p> Your keywords will update automatically every day.
 
 

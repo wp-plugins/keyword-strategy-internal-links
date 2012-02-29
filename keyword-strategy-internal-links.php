@@ -3,7 +3,7 @@
 Plugin Name: Keyword Strategy Internal Links
 Plugin URI: http://www.keywordstrategy.org/wordpress-plugin/
 Description: Keyword Strategy link generator plugin
-Version: 1.8.8
+Version: 1.9.0
 Author: Keyword Strategy
 Author URI: http://www.keywordstrategy.org/
 License: GPL2
@@ -44,8 +44,9 @@ register_activation_hook(__FILE__, 'kws_activation');
 register_deactivation_hook(__FILE__, 'kws_deactivation');
 // box in the post edit UI
 add_action('add_meta_boxes', 'kws_add_meta_boxes');
-// related sites action
+// ajax pages
 add_action('wp_ajax_kws_related_urls', 'kws_related_urls');
+add_action('wp_ajax_kws_all_keywords', 'kws_all_keywords');
 
 function kws_option_page()
 {
@@ -521,10 +522,10 @@ function kws_replace_content($content)
 	{
 
            
-		if ($keyphrase['url'] == $post_url || 
+		if (strtolower($keyphrase['url']) == strtolower($post_url) || 
 			 	$links_left <= 0 || 
 			 	!$keyphrase['keyword'] || 
-				(in_array($keyphrase['url'], $kws_urls) && $kws_urls[$keyphrase['keyword']] != $keyphrase['url'])
+				(in_array(strtolower($keyphrase['url']), $kws_urls) && strtolower($kws_urls[$keyphrase['keyword']]) != strtolower($keyphrase['url']))
 		) continue;
 
 		if (stristr($content, $keyphrase['url'])) continue;
@@ -538,8 +539,10 @@ function kws_replace_content($content)
 		}
 
 			
+		$escaped_keyphrase = kws_preg_escape_keyword($keyphrase['keyword']);
 		/** Skip the rest if the keyphrase isn't even in the post */
-		if (!stristr($content, htmlentities($keyphrase['keyword']))) {
+		if (!preg_match('/'.$escaped_keyphrase.'/i', $content))
+		{
 			continue;
 		}
 			
@@ -555,15 +558,19 @@ function kws_replace_content($content)
 		}			
 			
 		/** Build patterns and replacements for the regexp coming later */
-		$escaped_keyphrase = preg_quote(htmlentities($keyphrase['keyword']), '/');
 		if ($seemsUTF8) {
 			// Unicode doesn't like the word boundry `\b` modifier, so can't use that
 			$patterns[] = '~(?!((<.*?)|(<a.*?)))('. $escaped_keyphrase . ')(?!(([^<>]*?)>)|([^>]*?</a>))~si';
 		} else {
 				$patterns[] = '~(?!((<.*?)|(<a.*?)))(\b'. $escaped_keyphrase . '\b)(?!(([^<>]*?)>)|([^>]*?</a>))~si';
 		}
-		$kws_urls[$keyphrase['keyword']] = $keyphrase['url'];
-		$replacements[] = "<a href=\"".htmlspecialchars($keyphrase['url']).'">$0</a>';
+		$kws_urls[$keyphrase['keyword']] = strtolower($keyphrase['url']);
+		$style = "";
+		if (isset($_GET['kws_highlight']) && is_super_admin())
+		{
+			$style = 'style="color: red; background-color: yellow; padding: 3px; font-weight: bold;"';
+		}
+		$replacements[] = "<a {$style} href=\"".htmlspecialchars($keyphrase['url']).'">$0</a>';
 		$links_left--;
 	}
 
@@ -711,9 +718,9 @@ function kws_admin()
 		{
 			$order_by = " ORDER BY {$_REQUEST['sort']} {$_REQUEST['dir']} ";
 		}
-		$inpage = $wpdb->get_results("SELECT * FROM ".kws_get_table('inpage')." {$where} {$order_by} LIMIT ".(($page-1) * 10).", 10", ARRAY_A);
-		$inpage_total_keywords = $wpdb->get_var("SELECT COUNT(*) FROM ".kws_get_table('inpage')." {$where}");
-
+		$group_by = " GROUP BY url ";
+		$inpage = $wpdb->get_results("SELECT *, GROUP_CONCAT(keyword, '?', id ORDER BY keyword SEPARATOR ':') AS keywords_concat FROM ".kws_get_table('inpage')." {$where} {$order_by} {$group_by} LIMIT ".(($page-1) * 10).", 10", ARRAY_A);
+		$inpage_total_keywords = $wpdb->get_var("SELECT COUNT(*) FROM (SELECT id FROM ".kws_get_table('inpage')." {$where} {$group_by}) AS tmp");
 		$page_args = array('total_items' => $inpage_total_keywords, 'per_page' => 10, 'current' => $page);
 		include WP_PLUGIN_DIR.'/keyword-strategy-internal-links/inpage.tpl.php';
 	}
@@ -928,7 +935,7 @@ function kws_publish($post_id)
 	$remove_ids = array();
 	foreach ($wpdb->get_results("SELECT keyword, id FROM ".kws_get_table('inpage')." WHERE url='".addslashes($url)."'", ARRAY_A) AS $item)
 	{
-		$regex = '/'.preg_replace('/\s+/', '[\'"():;!?&*%#^=+ .,_-]+', $item['keyword']).'/i';
+		$regex = '/'.kws_preg_escape_keyword($item['keyword']).'/i';
 		if (preg_match($regex, $post['post_title']))
 		{
 			// keyword located in the title of the page
@@ -956,7 +963,7 @@ function kws_edit_post_related($post, $post_url)
 	$sql = $wpdb->prepare("SELECT keyword, id FROM ".kws_get_table('related')." WHERE url!=%s", $post_url);
 	foreach ($wpdb->get_results($sql, ARRAY_A) AS $item)
 	{
-		$regex = '/'.preg_replace('/\s+/', '[\'"():;!?&*%#^=+ .,_-]+', $item['keyword']).'/i';
+		$regex = '/'.kws_preg_escape_keyword($item['keyword']).'/i';
 		if (preg_match($regex, $post['post_content'].' '.$post['post_title']))
 		{
 			$wpdb->query($wpdb->prepare("UPDATE ".kws_get_table('related')." SET links=links+1 WHERE keyword=%s", $item['keyword']));
@@ -1115,3 +1122,56 @@ function kws_meta_box_render()
 <?
 }
 
+function kws_preg_escape_keyword($keyword)
+{
+	$escaped_keyphrase = $keyword;
+	$escaped_keyphrase = preg_replace('/[\s\'"():;!?&*%#^=+.,_-]+/', '__kws_special__', $escaped_keyphrase);
+	$escaped_keyphrase = preg_quote(htmlentities($escaped_keyphrase), '/');
+	$escaped_keyphrase = str_replace('__kws_special__', '[\'"():;!?&*%#^=+ .,_-]+', $escaped_keyphrase);
+	return $escaped_keyphrase;
+}
+
+add_action( 'admin_bar_menu', 'kws_admin_bar', 1000 );
+function kws_admin_bar()
+{
+	global $wp_admin_bar;
+	if ( !is_super_admin() || !is_admin_bar_showing() || is_admin()) return;
+	// menu parent
+	$wp_admin_bar->add_menu(array('id' => 'keyword_strategy', 'title' => 'Keyword Strategy', 'href' => KWS_PLUGIN_URL));
+	// highlight linked keywords
+	if ($_SERVER['REQUEST_METHOD'] == 'GET')
+	{
+		$current_url = kws_current_url();
+		if (strpos($current_url, 'kws_highlight'))
+		{
+			$remove_highlight_url = preg_replace('#(\?|&)kws_highlight#', '', $current_url);
+			$wp_admin_bar->add_menu(array('parent' => 'keyword_strategy', 'title' => 'Remove highlight', 'href' => $remove_highlight_url));
+		}
+		else
+		{
+			$highlight_url =  $current_url.(strpos($current_url, '?')? '&'  : '?').'kws_highlight';
+			$wp_admin_bar->add_menu(array('parent' => 'keyword_strategy', 'title' => 'Highlight inserted links', 'href' => $highlight_url));
+		}
+	}
+	// all keywords popup
+	$all_keywords_url = admin_url('admin-ajax.php').'?action=kws_all_keywords';
+	$wp_admin_bar->add_menu(array('parent' => 'keyword_strategy', 'title' => 'Show all keywords', 'href' => $all_keywords_url, 'meta' => array('target' => '_blank')));
+	// settings page shortcut
+	$wp_admin_bar->add_menu(array('parent' => 'keyword_strategy', 'title' => 'Settings', 'href' => KWS_PLUGIN_URL));
+}
+
+
+function kws_all_keywords()
+{
+	global $wpdb;
+	if (!is_super_admin()) return;
+	$sql = "SELECT keyword, url FROM ".kws_get_table('keywords')." ORDER BY keyword";
+	foreach ($wpdb->get_results($sql, ARRAY_A) AS $row)
+	{
+		?>
+		<span style="font-size: 1.1em; padding-right: 10px;"><?= $row['keyword'] ?></span> 
+		(<a href="<?= htmlspecialchars($row['url']) ?>"><?= htmlspecialchars($row['url']) ?></a>)
+		<br />
+		<?
+	}
+}

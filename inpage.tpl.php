@@ -11,7 +11,7 @@
 	These are keyword variations that you could enter into your pages. Click "Edit Page" to open the article and find a good place to put the text in. <br /> "Blacklist" will blacklist the keyword in your Keyword Strategy project. Click "Detach from URL" if you don't want to associate this keyword with this page.
 </p>
 <p>Last update: <?= $kws_options['last_update']? date('Y-m-d H:i', $kws_options['last_update']).", {$inpage_total_keywords} keywords" : 'Never'?> <span><input class="button" type="submit" value="Update now" onclick="window.location = '<?= KWS_PLUGIN_URL ?>' + '&kws_action=update_now_inpage'; this.parentNode.innerHTML = 'Updating... Please wait...'" /></span></p>
-<p> Your keywords will update automatically every day.
+<p> Your keywords will update automatically every day.</p>
 
 	<form action="<?= KWS_PLUGIN_URL ?>" method="get" style="text-align:right;">
 		<input type="hidden" name="page" value="keyword-strategy-internal-links" />
@@ -59,14 +59,18 @@
 	<? foreach ($inpage AS $item): ?>
 			<tr class="alternate author-self status-publish format-default iedit" valign="top">
 			<th scope="row" class="check-column"><input type="checkbox" name="keyword[]" value="<?= $item['id'] ?>" /></th>
-				<td class="post-title page-title column-title"><strong><?= htmlspecialchars($item['keyword']) ?></strong>
+				<td class="post-title page-title column-title">
+					<? foreach (explode(":", $item['keywords_concat']) AS $keyword_item): ?>
+						<? list($keyword, $keyword_id) = explode("?", $keyword_item); ?>
+						<strong style="display: inline;"><?= htmlspecialchars($keyword) ?></strong>
+						[<a href="<?= KWS_PLUGIN_URL ?>&kws_action=inpage_form&inpage_action=blacklist&keyword[]=<?= $keyword_id ?>" title="Blacklist keyword">blacklist</a>]
+						[<a href="<?= KWS_PLUGIN_URL ?>&kws_action=inpage_form&inpage_action=detach&keyword[]=<?= $item['id'] ?>" title="Detach from URL">detach</a>]
+						<br />
+					<? endforeach; ?>
 
 
 <div class="row-actions">
-<span class="edit"><a target="_blank" href="post.php?post=<?= $item['post_id'] ?>&amp;action=edit" title="Edit this page">Edit Page</a> |</span>
-	<span class="trash"><a class="submitdelete" title="Blacklist keyword" href="<?= KWS_PLUGIN_URL ?>&kws_action=inpage_form&inpage_action=blacklist&keyword[]=<?= $item['id'] ?>">Blacklist Keyword</a> |
-	</span>
-	<span class="trash"><a href="<?= KWS_PLUGIN_URL ?>&kws_action=inpage_form&inpage_action=detach&keyword[]=<?= $item['id'] ?>" title="Detach keyword from this URL" rel="permalink">Detach from this URL</a></span>
+<span class="edit"><a target="_blank" href="post.php?post=<?= $item['post_id'] ?>&amp;action=edit" title="Edit this page">Edit Page</a></span>
 </div>
 </td>			
 <td class=""><a target="_blank" href="<?= htmlspecialchars($item['url']) ?>"><?= htmlspecialchars($item['url']) ?></a></td>
@@ -90,7 +94,6 @@
 </div>
 
 </form>
-</div>
 <? else: ?>
 
 <p>
