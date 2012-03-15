@@ -58,13 +58,12 @@
 	<tbody>
 	<? foreach ($inpage AS $item): ?>
 			<tr class="alternate author-self status-publish format-default iedit" valign="top">
-			<th scope="row" class="check-column"><input type="checkbox" name="keyword[]" value="<?= $item['id'] ?>" /></th>
+			<th scope="row" class="check-column"><input type="checkbox" name="keyword[]" value="<?= htmlspecialchars($item['keywords_concat']) ?>" /></th>
 				<td class="post-title page-title column-title">
-					<? foreach (explode(":", $item['keywords_concat']) AS $keyword_item): ?>
-						<? list($keyword, $keyword_id) = explode("?", $keyword_item); ?>
+					<? foreach (explode(":", $item['keywords_concat']) AS $keyword): ?>
 						<strong style="display: inline;"><?= htmlspecialchars($keyword) ?></strong>
-						[<a href="<?= KWS_PLUGIN_URL ?>&kws_action=inpage_form&inpage_action=blacklist&keyword[]=<?= $keyword_id ?>" title="Blacklist keyword">blacklist</a>]
-						[<a href="<?= KWS_PLUGIN_URL ?>&kws_action=inpage_form&inpage_action=detach&keyword[]=<?= $item['id'] ?>" title="Detach from URL">detach</a>]
+						[<a href="<?= KWS_PLUGIN_URL ?>&kws_action=inpage_form&inpage_action=blacklist&keyword[]=<?= urlencode($keyword) ?>" title="Blacklist keyword">blacklist</a>]
+						[<a href="<?= KWS_PLUGIN_URL ?>&kws_action=inpage_form&inpage_action=detach&keyword[]=<?= urlencode($keyword) ?>" title="Detach from URL">detach</a>]
 						<br />
 					<? endforeach; ?>
 

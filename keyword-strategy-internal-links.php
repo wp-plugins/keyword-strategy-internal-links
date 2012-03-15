@@ -3,7 +3,7 @@
 Plugin Name: Keyword Strategy Internal Links
 Plugin URI: http://www.keywordstrategy.org/wordpress-plugin/
 Description: Keyword Strategy link generator plugin
-Version: 1.9.0
+Version: 1.9.1
 Author: Keyword Strategy
 Author URI: http://www.keywordstrategy.org/
 License: GPL2
@@ -106,7 +106,7 @@ function _kws_update_keywords()
 	$keywords = kws_get_keywords($cookies, $project);
 	if (! $keywords)
 	{
-		return 'No keywords found';
+		return 'No suitable keywords found';
 	}
 	$kws_options['total_keywords'] = kws_update_database($keywords);
 
@@ -169,6 +169,7 @@ function kws_related_google($keyword, $url)
 	return $return;
 }
 
+
 function kws_google_extract_urls($search_query, $ignore_url)
 {
 	$search_url = "http://www.google.com/search?num=50&q=".urlencode($search_query);
@@ -182,8 +183,16 @@ function kws_google_extract_urls($search_query, $ignore_url)
 	$return = array();
 	foreach ($matches[1] as $link)
 	{
+		if (preg_match('#^/url\?#', $link))
+		{
+			if (preg_match('#(?:\?|&)q=(.*?)(?:&|$)#', $link, $match))
+			{
+				$link = urldecode($match[1]);
+			}
+		}
 		$pos = strpos($link, $parsed['host']);
 		if ($pos === false || $pos > 8 || $link == $url) continue;
+		if (! kws_url_post_id($link)) continue;
 		$return[] = $link;
 	}
 	return $return;
@@ -227,7 +236,7 @@ function kws_get_keywords($cookies, $project_id)
 
 function kws_blacklist($keywords)
 {
-	global $kws_options;
+	kws_remove_from_local_db($keywords);
 	$params = array('keywords' => $keywords, 'blacklist' => 1);
 	return kws_request(array('url' => 'keywords/blacklist', 'params' => $params));
 }
@@ -235,10 +244,9 @@ function kws_blacklist($keywords)
 
 function kws_update_inpage($title, $content)
 {
-	global $kws_options;
 	kws_request(array(
 		'url' => 'keywords/update_inpage',
-		'params' => array('project_id' => $kws_options['project'], 'title' => $title, 'content'=>$content, 'blacklist' => 1),
+		'params' => array('title' => $title, 'content'=>$content, 'blacklist' => 1),
 		'unserialize' => false,
 	));
 	return true;
@@ -247,15 +255,28 @@ function kws_update_inpage($title, $content)
 
 function kws_detach($keywords)
 {
-	global $kws_options;
+	kws_remove_from_local_db($keywords);
 	$params = array('keywords' => $keywords);
 	return kws_request(array('params' => $params, 'url' => 'keywords/clear_group'));
+}
+
+function kws_remove_from_local_db($keywords)
+{
+	global $wpdb;
+	if (! $keywords) return;
+	foreach ($keywords AS $key => $keyword)
+	{
+		$keywords[$key] = '\'' . $wpdb->escape($keyword) . '\'';
+	}
+	$where = " WHERE keyword IN (".join(',', $keywords).")";
+	$wpdb->query("DELETE FROM ".kws_get_table('keywords').$where);
+	$wpdb->query("DELETE FROM ".kws_get_table('inpage').$where);
+	$wpdb->query("DELETE FROM ".kws_get_table('related').$where);
 }
 
 
 function kws_get_inpage($cookies, $project_id)
 {
-	global $kws_options;
 	return kws_request(array(
 		'params' => array('start'=>0, 'limit'=>10000, 'project_id'=>$project_id, 'url'=>'!null', 'inpage'=>'none', 'sort'=>'rank', 'dir'=>'ASC', 'remote'=>1,),
 		'cookies' => $cookies,
@@ -322,8 +343,6 @@ function kws_update_database($keywords)
 	$count = 0;
 	foreach ($keywords AS $item)
 	{
-		$post_id = kws_url_post_id($item[1], true);
-		if (! $post_id) continue;
 		$count++;
 		$sql .= "('".$wpdb->escape($item[0])."','".$wpdb->escape($item[1])."','".$wpdb->escape($item[2])."'),";
 		if ($count == $keywords_limit) break;
@@ -719,7 +738,7 @@ function kws_admin()
 			$order_by = " ORDER BY {$_REQUEST['sort']} {$_REQUEST['dir']} ";
 		}
 		$group_by = " GROUP BY url ";
-		$inpage = $wpdb->get_results("SELECT *, GROUP_CONCAT(keyword, '?', id ORDER BY keyword SEPARATOR ':') AS keywords_concat FROM ".kws_get_table('inpage')." {$where} {$order_by} {$group_by} LIMIT ".(($page-1) * 10).", 10", ARRAY_A);
+		$inpage = $wpdb->get_results("SELECT *, GROUP_CONCAT(keyword ORDER BY keyword SEPARATOR ':') AS keywords_concat FROM ".kws_get_table('inpage')." {$where} {$order_by} {$group_by} LIMIT ".(($page-1) * 10).", 10", ARRAY_A);
 		$inpage_total_keywords = $wpdb->get_var("SELECT COUNT(*) FROM (SELECT id FROM ".kws_get_table('inpage')." {$where} {$group_by}) AS tmp");
 		$page_args = array('total_items' => $inpage_total_keywords, 'per_page' => 10, 'current' => $page);
 		include WP_PLUGIN_DIR.'/keyword-strategy-internal-links/inpage.tpl.php';
@@ -733,9 +752,14 @@ function kws_admin()
 		}
 		if (is_array($_REQUEST['keyword']) && $_REQUEST['keyword'] && $_REQUEST['inpage_action'] != 'none')
 		{
-			$keywords_ids = array_map('intval', $_REQUEST['keyword']);
-			$sql = "SELECT keyword FROM ".kws_get_table('inpage')." WHERE id IN (".join(',', $keywords_ids).")";
-			$keywords = $wpdb->get_col($sql);
+			$keywords = array();
+			if (is_array($_REQUEST['keyword']))
+			{
+				foreach(array_map('strval', $_REQUEST['keyword']) AS $item)
+				{
+					$keywords = array_merge($keywords, explode(":", $item));
+				}
+			}
 			if ($keywords)
 			{
 				if ($_REQUEST['inpage_action'] == 'blacklist')
@@ -747,7 +771,6 @@ function kws_admin()
 					kws_detach($keywords);
 				}
 			}
-			kws_delete_keywords($keywords);
 		}
 		$url = KWS_PLUGIN_URL.'&kws_action=inpage';
 		if ($_REQUEST['paged'])
@@ -775,9 +798,7 @@ function kws_admin()
 		}
 		if (is_array($_REQUEST['keyword']) && $_REQUEST['keyword'] && $_REQUEST['related_action'] != 'none')
 		{
-			$keywords_ids = array_map('intval', $_REQUEST['keyword']);
-			$sql = "SELECT keyword FROM ".kws_get_table('related')." WHERE id IN (".join(',', $keywords_ids).")";
-			$keywords = $wpdb->get_col($sql);
+			$keywords = array_map('strval', $_REQUEST['keyword']);
 			if ($keywords)
 			{
 				if ($_REQUEST['related_action'] == 'blacklist')
@@ -789,7 +810,6 @@ function kws_admin()
 					kws_detach($keywords);
 				}
 			}
-			kws_delete_keywords($keywords);
 		}
 		$url = KWS_PLUGIN_URL.'&kws_action=related';
 		if ($_REQUEST['paged'])
@@ -878,21 +898,6 @@ function kws_url_post_id($url, $soft=false)
 	return $post_id;
 }
 
-
-function kws_delete_keywords($keywords)
-{
-	global $kws_options, $wpdb;
-	if (! $keywords) return;
-	$where = "keyword IN (";
-	foreach ($keywords AS $keyword)
-	{
-		$where .= '"'.$wpdb->escape($keyword).'",';
-	}
-	$where = substr($where,0,-1).')';
-	$wpdb->query("DELETE FROM ".kws_get_table('keywords')." WHERE {$where}");
-	$wpdb->query("DELETE FROM ".kws_get_table('inpage')." WHERE {$where}");
-	$wpdb->query("DELETE FROM ".kws_get_table('related')." WHERE {$where}");
-}
 
 add_action('wp_print_scripts', 'kws_tracker');
 function kws_tracker()
@@ -1087,7 +1092,7 @@ function kws_add_meta_boxes()
 	$kws_meta_box_content = '';
 	foreach ($inpage AS $item)
 	{
-      $kws_meta_box_content .= '<span><keyword data-kid="'.$item['id'].'">' . str_replace(' ', '&nbsp;', htmlspecialchars($item['keyword'])) . '</keyword><span style="padding-left: 3px;">[<a href="#" style="color:red; text-decoration: none;" title="Detach keyword from  this page">x</a>]</span></span>' . ',&nbsp&nbsp; ';
+      $kws_meta_box_content .= '<span><keyword data-keyword="'.htmlspecialchars($item['keyword']).'">' . str_replace(' ', '&nbsp;', htmlspecialchars($item['keyword'])) . '</keyword><span style="padding-left: 3px;">[<a href="#" style="color:red; text-decoration: none;" title="Detach keyword from  this page">x</a>]</span></span>' . ',&nbsp&nbsp; ';
 	}
 	$kws_meta_box_content = substr($kws_meta_box_content, 0, -2);
 	$id = 'kws_meta_box';
@@ -1107,12 +1112,12 @@ function kws_meta_box_render()
             var clear = $(this);
             var keyword = clear.parent().parent().find('keyword');
             var keyword_text = keyword.text();
-            var keyword_id = keyword.data('kid');
+            var keyword_id = keyword.data('keyword');
             var confirmation_text = 'Are you sure want to detach "'+keyword_text+'" keyword from this page?';
             if (confirm(confirmation_text)) {
                clear.parent().hide();
                keyword.wrap('<strike />');
-               $.get('<?=KWS_PLUGIN_URL?>' + '&kws_action=inpage_form&inpage_action=detach&keyword[]=' + keyword_id);
+               $.get('<?=KWS_PLUGIN_URL?>' + '&kws_action=inpage_form&inpage_action=detach&keyword[]=' + encodeURIComponent(keyword_id));
             }
             return false;
          }

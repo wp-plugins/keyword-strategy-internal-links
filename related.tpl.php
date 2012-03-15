@@ -73,15 +73,15 @@
 	<tbody>
 	<? foreach ($related AS $item): ?>
 			<tr class="alternate author-self status-publish format-default iedit" valign="top">
-			<th scope="row" class="check-column"><input type="checkbox" name="keyword[]" value="<?= $item['id'] ?>" /></th>
+			<th scope="row" class="check-column"><input type="checkbox" name="keyword[]" value="<?= htmlspecialchars($item['keyword']) ?>" /></th>
 				<td class="post-title page-title column-title"><strong><?= htmlspecialchars($item['keyword']) ?></strong>
 
 
 <div class="row-actions">
 <span class="edit"><a target="_blank" class="thickbox" href="<?= admin_url('admin-ajax.php') ?>?action=kws_related_urls&kws_keyword=<?= (urlencode($item['keyword'])) ?>" title="Related URLs for keyword '<?= htmlspecialchars($item['keyword']) ?>'">Show related</a> |</span>
-	<span class="trash"><a class="submitdelete" title="Blacklist keyword" href="<?= KWS_PLUGIN_URL ?>&kws_action=related_form&related_action=blacklist&keyword[]=<?= $item['id'] ?>">Blacklist Keyword</a> |
+	<span class="trash"><a class="submitdelete" title="Blacklist keyword" href="<?= KWS_PLUGIN_URL ?>&kws_action=related_form&related_action=blacklist&keyword[]=<?= urlencode($item['keyword']) ?>">Blacklist Keyword</a> |
 	</span>
-	<span class="trash"><a href="<?= KWS_PLUGIN_URL ?>&kws_action=related_form&related_action=detach&keyword[]=<?= $item['id'] ?>" title="Detach keyword from this URL" rel="permalink">Detach from this URL</a></span>
+	<span class="trash"><a href="<?= KWS_PLUGIN_URL ?>&kws_action=related_form&related_action=detach&keyword[]=<?= urlencode($item['keyword']) ?>" title="Detach keyword from this URL" rel="permalink">Detach from this URL</a></span>
 </div>
 </td>			
 <td class=""><a target="_blank" href="<?= htmlspecialchars($item['url']) ?>"><?= htmlspecialchars($item['url']) ?></a></td>
