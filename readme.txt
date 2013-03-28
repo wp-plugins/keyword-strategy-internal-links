@@ -3,7 +3,7 @@ Contributors: keyword-strategy
 Tags: seo, search engine optimization, links, internal linking
 Requires at least: 3.0.0
 Tested up to: 3.3.1
-Stable tag: 1.9.1
+Stable tag: 2.0
 
 The Keyword Strategy Internal Links plugin will automatically link keywords to destination pages within your website.
 
@@ -53,6 +53,10 @@ The Keyword Strategy tool is necessary to manage the internal links. If you shut
 Just replace old plugin files.
 
 == Changelog ==
+
+= 2.0 =
+* Added option to upload keyword/URL list in .CSV format
+* Removed KeywordStrategy.org integration
 
 = 1.9.1 =
 * Removed autolink only to posts/pages restriction. If you do not want to insert links for some parts of your website, you need to use "Filter URLs" feature from the Website tab

@@ -3,7 +3,7 @@
 Plugin Name: Keyword Strategy Internal Links
 Plugin URI: http://www.keywordstrategy.org/wordpress-plugin/
 Description: Keyword Strategy link generator plugin
-Version: 1.9.1
+Version: 2.0
 Author: Keyword Strategy
 Author URI: http://www.keywordstrategy.org/
 License: GPL2
@@ -88,6 +88,7 @@ function kws_update_keywords()
 
 function _kws_update_keywords()
 {
+	return;
 	global $kws_options;
 	$result = kws_check_login($kws_options['username'], $kws_options['password']);
 	if ($result['body'] != 'ok')
@@ -539,8 +540,6 @@ function kws_replace_content($content)
 	/** Loop through each keyphrase, looking for each one in the post */
 	foreach ($kws_keywords as $keyphrase)
 	{
-
-           
 		if (strtolower($keyphrase['url']) == strtolower($post_url) || 
 			 	$links_left <= 0 || 
 			 	!$keyphrase['keyword'] || 
@@ -554,7 +553,7 @@ function kws_replace_content($content)
 			$keyphrase['keyword'] = encodeUtfEnt($keyphrase['keyword']);
 		} else {
 			$seemsUTF8 = false;
-			$keyphrase['keyword'] = utf8_encode($keyphrase['keyword']);
+			#$keyphrase['keyword'] = utf8_encode($keyphrase['keyword']);
 		}
 
 			
@@ -579,9 +578,9 @@ function kws_replace_content($content)
 		/** Build patterns and replacements for the regexp coming later */
 		if ($seemsUTF8) {
 			// Unicode doesn't like the word boundry `\b` modifier, so can't use that
-			$patterns[] = '~(?!((<.*?)|(<a.*?)))('. $escaped_keyphrase . ')(?!(([^<>]*?)>)|([^>]*?</a>))~si';
+			$patterns[] = '~(?!((<.*?)|(<a.*?)))('. $escaped_keyphrase . ')(?!(([^<>]*?)>)|([^>]*?</a>))~siu';
 		} else {
-				$patterns[] = '~(?!((<.*?)|(<a.*?)))(\b'. $escaped_keyphrase . '\b)(?!(([^<>]*?)>)|([^>]*?</a>))~si';
+				$patterns[] = '~(?!((<.*?)|(<a.*?)))(\b'. $escaped_keyphrase . '\b)(?!(([^<>]*?)>)|([^>]*?</a>))~siu';
 		}
 		$kws_urls[$keyphrase['keyword']] = strtolower($keyphrase['url']);
 		$style = "";
@@ -631,6 +630,26 @@ function kws_admin()
 		$kws_options['update_freq'] = $freq;
 		update_option('kws_options', $kws_options);
 		kws_js_redirect();
+	}
+
+	if ($action == 'upload') {
+		$file = $_FILES['file'];
+		if (!$file || $file['error'] != 0) {
+			die("error uploading file!");
+		}
+		if (($handle = fopen($file['tmp_name'], "r")) !== FALSE) {
+			$keywords = array();
+			while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+				if (count($data) == 2) {
+					$keyword = $data[0];
+					$url = $data[1];
+					$keywords[] = array($keyword, $url, 0);
+				}
+			}
+			fclose($handle);
+			kws_update_database($keywords);
+		}
+		$action = false;
 	}
 
 	if ($action == 'update_now' || $action == 'update_now_inpage' || $action == 'update_now_related')
@@ -821,6 +840,7 @@ function kws_admin()
 
 	if (! $action)
 	{
+		$total_keywords = $wpdb->get_var("SELECT COUNT(*) FROM ".kws_get_table('keywords'));
 		include WP_PLUGIN_DIR.'/keyword-strategy-internal-links/settings.tpl.php';
 	}
 }
@@ -899,6 +919,7 @@ function kws_url_post_id($url, $soft=false)
 }
 
 
+/*
 add_action('wp_print_scripts', 'kws_tracker');
 function kws_tracker()
 {
@@ -917,6 +938,7 @@ function kws_tracker()
 		})();
 	</script>";
 }
+ */
 
 function kws_plugin_action_links( $links, $file ) {
 	if ( $file == plugin_basename( dirname(__FILE__).'/keyword-strategy-internal-links.php' ) ) {
@@ -1117,21 +1139,21 @@ function kws_meta_box_render()
             if (confirm(confirmation_text)) {
                clear.parent().hide();
                keyword.wrap('<strike />');
-               $.get('<?=KWS_PLUGIN_URL?>' + '&kws_action=inpage_form&inpage_action=detach&keyword[]=' + encodeURIComponent(keyword_id));
+               $.get('<?php echo KWS_PLUGIN_URL; ?>' + '&kws_action=inpage_form&inpage_action=detach&keyword[]=' + encodeURIComponent(keyword_id));
             }
             return false;
          }
          $('#kws_meta_box .inside a').click(handle_click);
       })(jQuery);
    </script>
-<?
+<?php
 }
 
 function kws_preg_escape_keyword($keyword)
 {
 	$escaped_keyphrase = $keyword;
 	$escaped_keyphrase = preg_replace('/[\s\'"():;!?&*%#^=+.,_-]+/', '__kws_special__', $escaped_keyphrase);
-	$escaped_keyphrase = preg_quote(htmlentities($escaped_keyphrase), '/');
+	$escaped_keyphrase = preg_quote(htmlspecialchars($escaped_keyphrase), '/');
 	$escaped_keyphrase = str_replace('__kws_special__', '[\'"():;!?&*%#^=+ .,_-]+', $escaped_keyphrase);
 	return $escaped_keyphrase;
 }
@@ -1174,9 +1196,10 @@ function kws_all_keywords()
 	foreach ($wpdb->get_results($sql, ARRAY_A) AS $row)
 	{
 		?>
-		<span style="font-size: 1.1em; padding-right: 10px;"><?= $row['keyword'] ?></span> 
-		(<a href="<?= htmlspecialchars($row['url']) ?>"><?= htmlspecialchars($row['url']) ?></a>)
+		<span style="font-size: 1.1em; padding-right: 10px;"><?php echo $row['keyword']; ?></span> 
+		(<a href="<?php echo htmlspecialchars($row['url']); ?>"><?php echo htmlspecialchars($row['url']); ?></a>)
 		<br />
-		<?
+		<?php
 	}
+	die();
 }
